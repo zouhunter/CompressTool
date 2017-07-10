@@ -257,8 +257,8 @@ namespace SevenZip.Extend
 				int startPos = value.startPos;
 				int num6 = value.size;
 				string text = value.path;
-				string path = outpath + text.Substring(0, text.LastIndexOf('/'));
-				string path2 = outpath + text;
+				string path = outpath + "/" + text.Substring(0, text.LastIndexOf('/'));
+				string path2 = outpath + "/" +  text;
 				if (!Directory.Exists(path))
 				{
 					Directory.CreateDirectory(path);
