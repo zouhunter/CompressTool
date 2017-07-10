@@ -10,4 +10,14 @@ namespace SevenZip.Extend
 
 		public ProgressDelegate progressDelegate;
 	}
+    public class FilesChangeInfo
+    {
+        public string foldername;
+
+        public string[] inpaths;
+
+        public string outpath;
+
+        public ProgressDelegate progressDelegate;
+    }
 }
