@@ -23,6 +23,7 @@ namespace SevenZip.Extend
 
             public byte[] data = null;
         }
+
         public static void PackFilesAsync(string foldername, string[] inpaths, string outpath, ProgressDelegate progress)
         {
             Thread thread = new Thread(new ParameterizedThreadStart(PackFiles));
@@ -44,7 +45,6 @@ namespace SevenZip.Extend
                 progressDelegate = progress
             });
         }
-
         public static void UnPackFolderAsync(string inpath, string outpath, ProgressDelegate progress)
         {
             Thread thread = new Thread(new ParameterizedThreadStart(UPKFolder.UnPackFolder));
@@ -54,128 +54,6 @@ namespace SevenZip.Extend
                 outpath = outpath,
                 progressDelegate = progress
             });
-        }
-
-        private static void PackFolder(object obj)
-        {
-            FileChangeInfo fileChangeInfo = (FileChangeInfo)obj;
-            string inpath = fileChangeInfo.inpath;
-            string outpath = fileChangeInfo.outpath;
-            CodeProgress codeProgress = null;
-            if (fileChangeInfo.progressDelegate != null)
-            {
-                codeProgress = new CodeProgress(fileChangeInfo.progressDelegate);
-            }
-            int num = 0;
-            int num2 = 0;
-            Dictionary<int, UPKFolder.OneFileInfor> dictionary = new Dictionary<int, UPKFolder.OneFileInfor>();
-            Debug.Log("遍历文件夹 " + inpath);
-            string str = inpath.Substring(0, inpath.LastIndexOf('/'));
-            DirectoryInfo directoryInfo = new DirectoryInfo(inpath);
-            FileInfo[] files = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
-            for (int i = 0; i < files.Length; i++)
-            {
-                FileInfo fileInfo = files[i];
-                if (!(fileInfo.Extension == ".meta"))
-                {
-                    string text = fileInfo.FullName.Replace("\\", "/");
-                    text = text.Replace(str + "/", "");
-                    int num3 = (int)fileInfo.Length;
-                    Debug.Log(string.Concat(new object[]
-                    {
-                        num,
-                        " : ",
-                        text,
-                        " 文件大小: ",
-                        num3
-                    }));
-                    UPKFolder.OneFileInfor oneFileInfor = new UPKFolder.OneFileInfor();
-                    oneFileInfor.id = num;
-                    oneFileInfor.size = num3;
-                    oneFileInfor.path = text;
-                    oneFileInfor.pathLength = new UTF8Encoding().GetBytes(text).Length;
-                    FileStream fileStream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read);
-                    if (fileStream == null)
-                    {
-                        Debug.Log("读取文件失败 ： " + fileInfo.FullName);
-                        return;
-                    }
-                    byte[] array = new byte[num3];
-                    fileStream.Read(array, 0, num3);
-                    oneFileInfor.data = array;
-                    fileStream.Close();
-                    dictionary.Add(num, oneFileInfor);
-                    num++;
-                    num2 += num3;
-                }
-            }
-            Debug.Log("文件数量 : " + num);
-            Debug.Log("文件总大小 : " + num2);
-            codeProgress.fileSize = num2;
-
-            int num4 = 4;
-            for (int j = 0; j < dictionary.Count; j++)
-            {
-                num4 += 16 + dictionary[j].pathLength;
-            }
-            for (int j = 0; j < dictionary.Count; j++)
-            {
-                int startPos;
-                if (j == 0)
-                {
-                    startPos = num4;
-                }
-                else
-                {
-                    startPos = dictionary[j - 1].startPos + dictionary[j - 1].size;
-                }
-                dictionary[j].startPos = startPos;
-            }
-            FileStream fileStream2 = new FileStream(outpath, FileMode.Create);
-            byte[] bytes = BitConverter.GetBytes(num);
-            fileStream2.Write(bytes, 0, bytes.Length);
-            for (int j = 0; j < dictionary.Count; j++)
-            {
-                byte[] bytes2 = BitConverter.GetBytes(dictionary[j].id);
-                fileStream2.Write(bytes2, 0, bytes2.Length);
-                byte[] bytes3 = BitConverter.GetBytes(dictionary[j].startPos);
-                fileStream2.Write(bytes3, 0, bytes3.Length);
-                byte[] bytes4 = BitConverter.GetBytes(dictionary[j].size);
-                fileStream2.Write(bytes4, 0, bytes4.Length);
-                byte[] bytes5 = BitConverter.GetBytes(dictionary[j].pathLength);
-                fileStream2.Write(bytes5, 0, bytes5.Length);
-                byte[] bytes6 = new UTF8Encoding().GetBytes(dictionary[j].path);
-                fileStream2.Write(bytes6, 0, bytes6.Length);
-            }
-            int num5 = 0;
-            foreach (KeyValuePair<int, UPKFolder.OneFileInfor> current in dictionary)
-            {
-                UPKFolder.OneFileInfor oneFileInfor = current.Value;
-                int size = oneFileInfor.size;
-                int k = 0;
-                while (k < size)
-                {
-                    byte[] array2;
-                    if (size - k < 1024)
-                    {
-                        array2 = new byte[size - k];
-                    }
-                    else
-                    {
-                        array2 = new byte[1024];
-                    }
-                    fileStream2.Write(oneFileInfor.data, k, array2.Length);
-                    k += array2.Length;
-                    num5 += array2.Length;
-                    if (codeProgress != null)
-                    {
-                        codeProgress.SetProgress((long)num5, (long)num5);
-                    }
-                }
-            }
-            fileStream2.Flush();
-            fileStream2.Close();
-            Debug.Log("打包完成");
         }
 
         public static void PackFiles(string foldername, string[] inpaths, string outpath, ProgressDelegate pregress)
@@ -188,7 +66,6 @@ namespace SevenZip.Extend
                 progressDelegate = pregress
             });
         }
-
         public static void PackFolder(string inpath, string outpath, ProgressDelegate progress)
         {
             UPKFolder.PackFolder(new FileChangeInfo
@@ -198,6 +75,16 @@ namespace SevenZip.Extend
                 progressDelegate = progress
             });
         }
+        public static void UnPackFolder(string inpath, string outpath, ProgressDelegate progress)
+        {
+            UPKFolder.UnPackFolder(new FileChangeInfo
+            {
+                inpath = inpath,
+                outpath = outpath,
+                progressDelegate = progress
+            });
+        }
+
         private static void PackFiles(object obj)
         {
             FilesChangeInfo fileChangeInfo = (FilesChangeInfo)obj;
@@ -343,7 +230,127 @@ namespace SevenZip.Extend
             fileStream2.Close();
             Debug.Log("打包完成");
         }
+        private static void PackFolder(object obj)
+        {
+            FileChangeInfo fileChangeInfo = (FileChangeInfo)obj;
+            string inpath = fileChangeInfo.inpath;
+            string outpath = fileChangeInfo.outpath;
+            CodeProgress codeProgress = null;
+            if (fileChangeInfo.progressDelegate != null)
+            {
+                codeProgress = new CodeProgress(fileChangeInfo.progressDelegate);
+            }
+            int num = 0;
+            int num2 = 0;
+            Dictionary<int, UPKFolder.OneFileInfor> dictionary = new Dictionary<int, UPKFolder.OneFileInfor>();
+            Debug.Log("遍历文件夹 " + inpath);
+            string str = inpath.Substring(0, inpath.LastIndexOf('/'));
+            DirectoryInfo directoryInfo = new DirectoryInfo(inpath);
+            FileInfo[] files = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++)
+            {
+                FileInfo fileInfo = files[i];
+                if (!(fileInfo.Extension == ".meta"))
+                {
+                    string text = fileInfo.FullName.Replace("\\", "/");
+                    text = text.Replace(str + "/", "");
+                    int num3 = (int)fileInfo.Length;
+                    Debug.Log(string.Concat(new object[]
+                    {
+                        num,
+                        " : ",
+                        text,
+                        " 文件大小: ",
+                        num3
+                    }));
+                    UPKFolder.OneFileInfor oneFileInfor = new UPKFolder.OneFileInfor();
+                    oneFileInfor.id = num;
+                    oneFileInfor.size = num3;
+                    oneFileInfor.path = text;
+                    oneFileInfor.pathLength = new UTF8Encoding().GetBytes(text).Length;
+                    FileStream fileStream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read);
+                    if (fileStream == null)
+                    {
+                        Debug.Log("读取文件失败 ： " + fileInfo.FullName);
+                        return;
+                    }
+                    byte[] array = new byte[num3];
+                    fileStream.Read(array, 0, num3);
+                    oneFileInfor.data = array;
+                    fileStream.Close();
+                    dictionary.Add(num, oneFileInfor);
+                    num++;
+                    num2 += num3;
+                }
+            }
+            Debug.Log("文件数量 : " + num);
+            Debug.Log("文件总大小 : " + num2);
+            codeProgress.fileSize = num2;
 
+            int num4 = 4;
+            for (int j = 0; j < dictionary.Count; j++)
+            {
+                num4 += 16 + dictionary[j].pathLength;
+            }
+            for (int j = 0; j < dictionary.Count; j++)
+            {
+                int startPos;
+                if (j == 0)
+                {
+                    startPos = num4;
+                }
+                else
+                {
+                    startPos = dictionary[j - 1].startPos + dictionary[j - 1].size;
+                }
+                dictionary[j].startPos = startPos;
+            }
+            FileStream fileStream2 = new FileStream(outpath, FileMode.Create);
+            byte[] bytes = BitConverter.GetBytes(num);
+            fileStream2.Write(bytes, 0, bytes.Length);
+            for (int j = 0; j < dictionary.Count; j++)
+            {
+                byte[] bytes2 = BitConverter.GetBytes(dictionary[j].id);
+                fileStream2.Write(bytes2, 0, bytes2.Length);
+                byte[] bytes3 = BitConverter.GetBytes(dictionary[j].startPos);
+                fileStream2.Write(bytes3, 0, bytes3.Length);
+                byte[] bytes4 = BitConverter.GetBytes(dictionary[j].size);
+                fileStream2.Write(bytes4, 0, bytes4.Length);
+                byte[] bytes5 = BitConverter.GetBytes(dictionary[j].pathLength);
+                fileStream2.Write(bytes5, 0, bytes5.Length);
+                byte[] bytes6 = new UTF8Encoding().GetBytes(dictionary[j].path);
+                fileStream2.Write(bytes6, 0, bytes6.Length);
+            }
+            int num5 = 0;
+            foreach (KeyValuePair<int, UPKFolder.OneFileInfor> current in dictionary)
+            {
+                UPKFolder.OneFileInfor oneFileInfor = current.Value;
+                int size = oneFileInfor.size;
+                int k = 0;
+                while (k < size)
+                {
+                    byte[] array2;
+                    if (size - k < 1024)
+                    {
+                        array2 = new byte[size - k];
+                    }
+                    else
+                    {
+                        array2 = new byte[1024];
+                    }
+                    fileStream2.Write(oneFileInfor.data, k, array2.Length);
+                    k += array2.Length;
+                    num5 += array2.Length;
+                    if (codeProgress != null)
+                    {
+                        codeProgress.SetProgress((long)num5, (long)num5);
+                    }
+                }
+            }
+            fileStream2.Flush();
+            fileStream2.Close();
+            Debug.Log("打包完成");
+        }
         private static void UnPackFolder(object obj)
         {
             FileChangeInfo fileChangeInfo = (FileChangeInfo)obj;
@@ -461,16 +468,6 @@ namespace SevenZip.Extend
             }
             fileStream.Close();
             Debug.Log("解包完成");
-        }
-
-        public static void UnPackFolder(string inpath, string outpath, ProgressDelegate progress)
-        {
-            UPKFolder.UnPackFolder(new FileChangeInfo
-            {
-                inpath = inpath,
-                outpath = outpath,
-                progressDelegate = progress
-            });
         }
     }
 }

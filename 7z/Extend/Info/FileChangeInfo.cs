@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace SevenZip.Extend
 {
@@ -17,6 +18,17 @@ namespace SevenZip.Extend
         public string[] inpaths;
 
         public string outpath;
+
+        public ProgressDelegate progressDelegate;
+    }
+
+    public class FileStreamChangeInfo
+    {
+        public string foldername;
+
+        public string[] inpaths;
+
+        public Stream outStream;
 
         public ProgressDelegate progressDelegate;
     }
